@@ -1,22 +1,44 @@
-name: Intentional Failure Workflow
+name: Test Workflow
+
 
 on:
   push:
     branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
 
 jobs:
-  fail-job:
-    name: This job will fail
+  check-commit-message:
+    name: Check for 'fail' in Commit Message
     runs-on: ubuntu-latest
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 2  # Need at least 2 commits to get the message
       
-      - name: Set up environment
-        run: echo "Setting up environment before failure"
-      
-      - name: This step will fail
+      - name: Get commit message
+        id: get_commit_message
         run: |
-          echo "About to fail..."
-          exit 1
+          if ${{ github.event_name == 'push' }}; then
+            echo "COMMIT_MSG=$(git log --format=%B -n 1 ${{ github.sha }})" >> $GITHUB_ENV
+          else
+            echo "COMMIT_MSG=$(git log --format=%B -n 1 ${{ github.event.pull_request.head.sha }})" >> $GITHUB_ENV
+          fi
+      
+      - name: Display commit message
+        run: |
+          echo "Commit message: $COMMIT_MSG"
+      
+      - name: Check if commit message contains 'fail'
+        run: |
+          if echo "$COMMIT_MSG" | grep -i "fail" > /dev/null; then
+            echo "❌ Error: Commit message contains the word 'fail'."
+            echo "Commit message: $COMMIT_MSG"
+            echo "Please avoid using 'fail' in your commit messages. Jesus."
+            exit 1
+          else
+            echo "✅ Success: Commit message doesn't contain 'fail'. Proceeding."
+            exit 0
+          fi
