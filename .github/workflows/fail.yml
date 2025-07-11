@@ -1,0 +1,22 @@
+name: Intentional Failure Workflow
+
+on:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  fail-job:
+    name: This job will fail
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Set up environment
+        run: echo "Setting up environment before failure"
+      
+      - name: This step will fail
+        run: |
+          echo "About to fail..."
+          exit 1
